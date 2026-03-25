@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { User, ArchetypeProfile, YearTheme, QuarterObjective, MonthGoal, WeekFocus, DailyStep, Area, ChatMessage } from './types';
 import { AREAS, AREA_LABELS, ARCHETYPES } from './constants';
 import { 
@@ -13,7 +14,7 @@ import {
   getProgressForMonth,
   getProgressForWeek
 } from './utils';
-import { getAssistantResponse } from './services/geminiService';
+import { getAssistantResponse, getAssistantResponseStream } from './services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User as UserIcon, 
@@ -30,7 +31,8 @@ import {
   Send,
   Loader2,
   Menu,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 
 import { baseTheme, brandAssets } from './theme';
@@ -52,6 +54,7 @@ const DEMO_USER: User = {
   familyStatus: 'single',
   hasChildren: false,
   interests: ['Саморазвитие', 'Творчество'],
+  focusAreas: ['Саморазвитие', 'Творчество'],
   currentProjects: ['Изучение АрхиПути'],
   yearlyGoals: {},
   useArchetypeTheme: true,
@@ -77,6 +80,8 @@ export default function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [tempHistory, setTempHistory] = useState('');
+
+  const userProfile = user || DEMO_USER;
 
   useEffect(() => {
     if (user) {
@@ -270,24 +275,57 @@ export default function App() {
     setInputMessage('');
     setLoading(true);
 
-    const response = await getAssistantResponse(
-      user,
-      data.archetypeProfile,
-      data.yearTheme,
-      data.quarterObjectives,
-      data.monthGoals,
-      data.weekFocuses,
-      data.dailySteps.filter(s => new Date(s.date).toDateString() === new Date().toDateString()),
-      inputMessage
-    );
+    // Добавляем пустое сообщение от ассистента, которое будем наполнять
+    setChatMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-    setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    setLoading(false);
+    try {
+      const stream = getAssistantResponseStream(
+        user,
+        data.archetypeProfile,
+        data.yearTheme,
+        data.quarterObjectives,
+        data.monthGoals,
+        data.weekFocuses,
+        data.dailySteps.filter(s => new Date(s.date).toDateString() === new Date().toDateString()),
+        [...chatMessages, userMsg].slice(-10)
+      );
+
+      let fullText = '';
+      for await (const chunk of stream) {
+        // Имитируем "человеческую" печать, добавляя символы с небольшой задержкой
+        for (const char of chunk) {
+          fullText += char;
+          setChatMessages(prev => {
+            const newMessages = [...prev];
+            if (newMessages.length > 0) {
+              newMessages[newMessages.length - 1] = { role: 'assistant', content: fullText };
+            }
+            return newMessages;
+          });
+          
+          // Случайная задержка для естественности (от 5 до 20 мс)
+          // Если символов в чанке много, ускоряем печать, чтобы не отставать от потока
+          const delay = chunk.length > 100 ? 5 : Math.random() * 15 + 5;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    } catch (e) {
+      console.error("Streaming error:", e);
+      setChatMessages(prev => {
+        const newMessages = [...prev];
+        if (newMessages.length > 0) {
+          newMessages[newMessages.length - 1] = { role: 'assistant', content: "Произошла ошибка при получении ответа." };
+        }
+        return newMessages;
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-dvh bg-stone-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
       </div>
     );
@@ -295,22 +333,22 @@ export default function App() {
 
   return (
     <div 
-      className="min-h-screen transition-colors duration-500" 
+      className="min-h-dvh transition-colors duration-500 overflow-x-hidden" 
       style={{ backgroundColor: theme.background, color: theme.textPrimary }}
     >
       {screen !== 'onboarding' && (
-        <nav className="fixed top-0 left-0 right-0 h-16 border-b z-50 flex items-center justify-between px-4 md:px-8 backdrop-blur-md"
+        <nav className="fixed top-0 left-0 right-0 h-16 border-b z-50 flex items-center justify-between px-3 md:px-8 backdrop-blur-md w-full max-w-full"
           style={{ backgroundColor: `${theme.surface}CC`, borderColor: theme.border }}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <div 
-              className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center shadow-sm"
+              className="w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center shadow-sm"
               style={{ backgroundColor: theme.accent || theme.primary, color: '#FFFFFF' }}
             >
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+              <Sparkles className="w-3.5 h-3.5 md:w-5 md:h-5" />
             </div>
-            <h1 className="text-lg md:text-xl font-serif italic font-bold tracking-tight">АрхиПуть</h1>
-            {user?.isDemo && (
-              <span className="ml-2 px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded-full border border-amber-500/20">ДЕМО</span>
+            <h1 className="text-base md:text-xl font-serif italic font-bold tracking-tight truncate max-w-[100px] md:max-w-none">АрхиПуть</h1>
+            {userProfile?.isDemo && (
+              <span className="ml-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[8px] md:text-[10px] font-bold rounded-full border border-amber-500/20 shrink-0">ДЕМО</span>
             )}
           </div>
           
@@ -375,19 +413,21 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
             <button 
               onClick={async () => {
                 if (!user) return;
                 const updatedUser = { ...user, useArchetypeTheme: !user.useArchetypeTheme };
                 setUser(updatedUser);
-                try {
-                  await fetch(`/api/user/${user.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ useArchetypeTheme: updatedUser.useArchetypeTheme }),
-                  });
-                } catch (e) { console.error(e); }
+                if (!user.isDemo) {
+                  try {
+                    await fetch(`/api/user/${user.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ useArchetypeTheme: updatedUser.useArchetypeTheme }),
+                    });
+                  } catch (e) { console.error(e); }
+                }
               }}
               className="p-1.5 md:p-2 rounded-full transition-colors hover:bg-white/10 group relative"
               title="Переключить тему"
@@ -397,11 +437,11 @@ export default function App() {
             </button>
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition-transform hover:scale-110 active:scale-95 shadow-sm overflow-hidden"
+              className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition-transform hover:scale-110 active:scale-95 shadow-sm overflow-hidden shrink-0"
               style={{ backgroundColor: theme.accent || theme.primary, color: '#FFFFFF' }}
               title="Профиль и настройки"
             >
-              {user ? user.name[0] : <UserIcon className="w-4 h-4 md:w-5 md:h-5" />}
+              {userProfile ? userProfile.name[0] : <UserIcon className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
           </div>
         </nav>
@@ -483,7 +523,7 @@ export default function App() {
               <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-8 no-scrollbar">
                 {/* Profile Info */}
                 <div className="space-y-4">
-                  {!user || user.isDemo ? (
+                  {userProfile.isDemo ? (
                     <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-4">
                       <div className="flex items-center gap-3 text-amber-500">
                         <UserIcon className="w-5 h-5" />
@@ -508,11 +548,11 @@ export default function App() {
                         className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-inner shrink-0"
                         style={{ backgroundColor: theme.accent || theme.primary, color: '#FFFFFF' }}
                       >
-                        {user.name[0]}
+                        {userProfile.name[0]}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-bold text-lg truncate">{user.name}</h3>
-                        <p className="text-xs opacity-50">{user.birthDate ? new Date(user.birthDate).toLocaleDateString('ru-RU') : ''}</p>
+                        <h3 className="font-bold text-lg truncate">{userProfile.name}</h3>
+                        <p className="text-xs opacity-50">{userProfile.birthDate ? new Date(userProfile.birthDate).toLocaleDateString('ru-RU') : ''}</p>
                       </div>
                     </div>
                   )}
@@ -530,8 +570,78 @@ export default function App() {
                   )}
                 </div>
 
+                {/* Interests & Projects Section */}
+                {!userProfile?.isDemo && (
+                  <div className="space-y-6 pt-4 border-t" style={{ borderColor: theme.border }}>
+                    <div className="px-2">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40">Ваши сферы и проекты</h4>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 ml-2">Сферы интересов</label>
+                        <div className="flex flex-wrap gap-1.5 px-2">
+                          {['Саморазвитие', 'Карьера', 'Творчество', 'Спорт', 'Семья', 'Путешествия', 'Финансы', 'Духовность'].map(interest => (
+                            <button
+                              key={interest}
+                              onClick={async () => {
+                                if (!user) return;
+                                const next = (userProfile?.interests ?? []).includes(interest)
+                                  ? (userProfile?.interests ?? []).filter(i => i !== interest)
+                                  : [...(userProfile?.interests ?? []), interest];
+                                const updatedUser = { ...user, interests: next };
+                                setUser(updatedUser);
+                                try {
+                                  await fetch(`/api/user/${user.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ interests: next }),
+                                  });
+                                } catch (e) { console.error(e); }
+                              }}
+                              className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
+                                (userProfile?.interests ?? []).includes(interest) ? 'text-white' : 'opacity-40'
+                              }`}
+                              style={{ 
+                                backgroundColor: (userProfile?.interests ?? []).includes(interest) ? (theme.accent || theme.primary) : 'transparent',
+                                borderColor: (userProfile?.interests ?? []).includes(interest) ? (theme.accent || theme.primary) : theme.border
+                              }}
+                            >
+                              {interest}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 ml-2">Текущие проекты</label>
+                        <textarea 
+                          className="w-full h-20 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none no-scrollbar"
+                          placeholder="Ваши проекты..."
+                          value={(userProfile?.currentProjects ?? []).join(', ')}
+                          onChange={async (e) => {
+                            if (!user) return;
+                            const next = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                            const updatedUser = { ...user, currentProjects: next };
+                            setUser(updatedUser);
+                          }}
+                          onBlur={async (e) => {
+                            if (!user) return;
+                            const next = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                            try {
+                              await fetch(`/api/user/${user.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ currentProjects: next }),
+                              });
+                            } catch (e) { console.error(e); }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* AI History Section */}
-                {!user?.isDemo && (
+                {!userProfile?.isDemo && (
                   <div className="space-y-4">
                     <div className="px-2">
                       <h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40">История общения с ИИ</h4>
@@ -631,7 +741,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className={`pt-14 md:pt-16 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 px-4 md:px-8 max-w-5xl mx-auto w-full flex flex-col ${screen === 'chat' ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <main className={`pt-14 md:pt-16 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 px-4 md:px-8 max-w-5xl mx-auto w-full flex flex-col ${screen === 'chat' ? 'h-dvh overflow-hidden' : 'min-h-dvh'}`}>
         <div className={`flex-1 flex flex-col ${screen === 'chat' ? 'overflow-hidden py-4' : 'py-8 md:py-12'}`}>
           {screen === 'onboarding' && <Onboarding onComplete={handleOnboarding} onBack={() => setScreen('today')} theme={theme} />}
           {screen === 'year' && data && <YearScreen data={data} theme={theme} user={user} />}
@@ -918,7 +1028,12 @@ function Onboarding({ onComplete, onBack, theme }: { onComplete: (data: any) => 
             </div>
             <div className="pt-6 flex flex-col gap-3">
               <button 
-                onClick={() => onComplete({ ...formData, currentProjects: [formData.currentProjects], useArchetypeTheme: true })} 
+                onClick={() => onComplete({ 
+                  ...formData, 
+                  focusAreas: formData.interests,
+                  currentProjects: [formData.currentProjects], 
+                  useArchetypeTheme: true 
+                })} 
                 className="w-full py-4 text-white rounded-2xl font-bold shadow-lg transition-all active:scale-95"
                 style={{ backgroundColor: theme.accent || theme.primary }}
               >
@@ -1059,7 +1174,9 @@ function YearScreen({ data, theme, user }: { data: any, theme: any, user: User |
               Главная тема
             </div>
             <h3 className="text-2xl md:text-3xl font-serif font-bold">{yearTheme.title}</h3>
-            <p className="text-base opacity-70 leading-relaxed">{yearTheme.description}</p>
+            <div className="text-base opacity-70 leading-relaxed markdown-body">
+              <ReactMarkdown>{yearTheme.description}</ReactMarkdown>
+            </div>
           </div>
           <div className="w-full md:w-px h-px md:h-32 bg-stone-200/20" style={{ backgroundColor: theme.border }} />
           <div className="flex flex-col gap-2 text-center md:text-left min-w-[200px]">
@@ -1117,6 +1234,9 @@ function YearScreen({ data, theme, user }: { data: any, theme: any, user: User |
                   <p className="text-[9px] font-bold uppercase tracking-widest opacity-40">{AREA_LABELS[q.relatedArea]}</p>
                 </div>
                 <h4 className="text-lg font-bold group-hover:text-accent transition-colors">{q.title}</h4>
+                <div className="text-xs opacity-60 max-w-md prose prose-sm prose-stone">
+                  <ReactMarkdown>{q.description}</ReactMarkdown>
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div 
@@ -1210,6 +1330,28 @@ function MonthScreen({ data, selectedMonth, onMonthChange, onToggleTask, theme }
   const monthGoals = data.monthGoals.filter((g: MonthGoal) => g.month === selectedMonth);
   const monthTasks = data.dailySteps.filter((s: DailyStep) => new Date(s.date).getMonth() + 1 === selectedMonth);
   
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const centerMonth = () => {
+      if (activeRef.current && scrollRef.current) {
+        const scrollContainer = scrollRef.current;
+        const activeElement = activeRef.current;
+        
+        const scrollLeft = activeElement.offsetLeft - (scrollContainer.clientWidth / 2) + (activeElement.clientWidth / 2);
+        scrollContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      }
+    };
+
+    // Use requestAnimationFrame to ensure the DOM is ready
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(centerMonth);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedMonth]);
+
   return (
     <div className="space-y-12 pb-24">
       <header className="space-y-8">
@@ -1243,13 +1385,14 @@ function MonthScreen({ data, selectedMonth, onMonthChange, onToggleTask, theme }
           </div>
         </div>
         
-        <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4">
+        <div ref={scrollRef} className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 scroll-smooth">
           {months.map((m, i) => {
             const mProgress = getProgressForMonth(i + 1, data.dailySteps);
             const isActive = selectedMonth === i + 1;
             return (
               <button
                 key={m}
+                ref={isActive ? activeRef : null}
                 onClick={() => onMonthChange(i + 1)}
                 className={`group relative px-6 py-4 rounded-2xl transition-all flex flex-col items-start gap-2 border min-w-[140px] ${
                   isActive ? 'scale-105 z-10 shadow-xl' : 'opacity-40 hover:opacity-100'
@@ -1307,7 +1450,9 @@ function MonthScreen({ data, selectedMonth, onMonthChange, onToggleTask, theme }
                     <span className="text-[9px] font-bold uppercase tracking-widest opacity-40">{AREA_LABELS[g.relatedArea]}</span>
                   </div>
                   <h4 className="text-xl font-bold leading-tight group-hover:text-accent transition-colors">{g.title}</h4>
-                  <p className="text-sm opacity-60 leading-relaxed italic">{g.description}</p>
+                  <div className="text-sm opacity-60 leading-relaxed italic markdown-body">
+                    <ReactMarkdown>{g.description}</ReactMarkdown>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -1315,6 +1460,25 @@ function MonthScreen({ data, selectedMonth, onMonthChange, onToggleTask, theme }
               <div className="text-center py-16 opacity-20 italic font-serif text-xl">Векторы еще не заданы</div>
             )}
           </div>
+
+          {data.yearTheme?.recommendedBooks && (
+            <div className="p-8 rounded-[2rem] border bg-stone-500/5 space-y-6" style={{ borderColor: theme.border }}>
+              <div className="space-y-1">
+                <h3 className="text-xl font-serif font-bold">Рекомендованная литература</h3>
+                <p className="text-[9px] font-bold uppercase tracking-widest opacity-40">Для глубокой проработки года</p>
+              </div>
+              <ul className="space-y-4">
+                {data.yearTheme.recommendedBooks.map((book: string, i: number) => (
+                  <li key={i} className="flex items-start gap-4 group">
+                    <div className="w-8 h-8 rounded-full border flex items-center justify-center shrink-0 opacity-20 group-hover:opacity-100 transition-opacity" style={{ borderColor: theme.accent }}>
+                      <BookOpen className="w-4 h-4" style={{ color: theme.accent }} />
+                    </div>
+                    <span className="text-sm font-medium leading-tight pt-1.5">{book}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-7 space-y-8">
@@ -1369,6 +1533,7 @@ function MonthScreen({ data, selectedMonth, onMonthChange, onToggleTask, theme }
 }
 
 function TodayScreen({ data, onToggleTask, onNavigateChat, theme }: { data: any, onToggleTask: (id: string) => void, onNavigateChat: () => void, theme: any }) {
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const today = new Date();
   const todayTasks = data.dailySteps.filter((s: DailyStep) => {
     const d = new Date(s.date);
@@ -1508,10 +1673,35 @@ function TodayScreen({ data, onToggleTask, onNavigateChat, theme }: { data: any,
                     {t.status === 'done' && <CheckCircle2 className="w-4 h-4" />}
                   </button>
                   <div className="flex-1 min-w-0 relative z-10">
-                    <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center justify-between gap-3 mb-1">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-30">{AREA_LABELS[t.relatedArea]}</span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedTaskId(expandedTaskId === t.id ? null : t.id);
+                        }}
+                        className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity flex items-center gap-1"
+                      >
+                        {expandedTaskId === t.id ? 'Скрыть' : 'Подробнее'}
+                        <ChevronRight className={`w-3 h-3 transition-transform ${expandedTaskId === t.id ? 'rotate-90' : ''}`} />
+                      </button>
                     </div>
                     <p className={`text-lg font-bold leading-tight ${t.status === 'done' ? 'opacity-20 line-through' : ''}`}>{t.title}</p>
+                    
+                    <AnimatePresence>
+                      {expandedTaskId === t.id && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 mt-4 border-t border-stone-500/10 text-sm opacity-70 leading-relaxed markdown-body">
+                            <ReactMarkdown>{t.description}</ReactMarkdown>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </motion.div>
               ))}
@@ -1611,15 +1801,15 @@ function ChatScreen({ messages, onSend, input, setInput, loading, theme }: { mes
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div 
-              className={`max-w-[85%] md:max-w-[80%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed ${
+              className={`max-w-[85%] md:max-w-[80%] p-3 md:p-4 rounded-2xl text-xs md:text-sm leading-relaxed markdown-body ${
                 m.role === 'user' ? 'text-white rounded-tr-none' : 'text-stone-800 rounded-tl-none'
-              }`}
+              } ${m.role === 'assistant' && i === messages.length - 1 && loading ? 'typing-cursor' : ''}`}
               style={{ 
                 backgroundColor: m.role === 'user' ? (theme.accent || theme.primary) : theme.background,
                 color: m.role === 'user' ? '#FFFFFF' : theme.textPrimary
               }}
             >
-              {m.content}
+              <ReactMarkdown>{m.content}</ReactMarkdown>
             </div>
           </div>
         ))}

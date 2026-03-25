@@ -8,6 +8,7 @@ export interface User {
   familyStatus: string;
   hasChildren: boolean;
   interests: string[];
+  focusAreas: string[];
   currentProjects: string[];
   yearlyGoals: Partial<Record<Area, string>>;
   useArchetypeTheme?: boolean;
@@ -22,6 +23,7 @@ export interface ArchetypeProfile {
   personalYearArchetypeName: string;
   personalYearDescription: string;
   themesByArea: Record<Area, string>;
+  recommendedBooks: string[];
 }
 
 export interface YearTheme {
@@ -31,6 +33,7 @@ export interface YearTheme {
   title: string;
   description: string;
   areaThemes: Record<Area, string>;
+  recommendedBooks: string[];
 }
 
 export interface QuarterObjective {

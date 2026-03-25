@@ -39,165 +39,184 @@ export function calculatePersonalYear(birthDate: Date, year: number): number {
 }
 
 export function generateArchetypeProfile(userId: string, birthDate: Date, year: number): ArchetypeProfile {
-  const personalYearNumber = calculatePersonalYear(birthDate, year);
-  const archetype = ARCHETYPES[personalYearNumber];
-
+  const personalYear = calculatePersonalYear(birthDate, year);
+  const archetype = ARCHETYPES[personalYear];
+  
   return {
     userId,
     year,
-    personalYearNumber,
+    personalYearNumber: personalYear,
     personalYearArchetypeName: archetype.name,
     personalYearDescription: archetype.description,
     themesByArea: archetype.themes,
+    recommendedBooks: archetype.recommendedBooks,
   };
 }
 
-export function generateYearTheme(user: User, archetypeProfile: ArchetypeProfile): YearTheme {
-  const archetype = ARCHETYPES[archetypeProfile.personalYearNumber];
+export function generateYearTheme(user: User, profile: ArchetypeProfile): YearTheme {
+  const generalAdvice = profile.personalYearDescription;
+  const specificAdvice = `Как ${user.profession || 'специалист'}, в этом году сфокусируйтесь на: ${(user.focusAreas || []).join(', ') || 'своих приоритетах'}. Ваши проекты (${(user.currentProjects || []).join(', ') || 'текущие задачи'}) получат поддержку через энергию архетипа ${profile.personalYearArchetypeName}.`;
+
   return {
-    id: `year-${archetypeProfile.year}-${user.id}`,
+    id: `yt-${user.id}-${profile.year}`,
     userId: user.id,
-    year: archetypeProfile.year,
-    title: `Год под знаком архетипа ${archetype.name}`,
-    description: archetype.description,
-    areaThemes: archetype.themes,
+    year: profile.year,
+    title: `Год ${profile.personalYearArchetypeName}: ${profile.personalYearArchetypeName}`,
+    description: `### Общие рекомендации\n${generalAdvice}\n\n### Конкретные шаги\n${specificAdvice}`,
+    areaThemes: profile.themesByArea,
+    recommendedBooks: profile.recommendedBooks,
   };
 }
 
 export function generateQuarterObjectives(yearTheme: YearTheme, user: User, personalYearNumber: number): QuarterObjective[] {
+  const projects = user.currentProjects && user.currentProjects.length > 0 ? user.currentProjects : [];
+  const mainProject = projects[0] || 'ключевое направление';
+  const userGoals = user.yearlyGoals || {};
+
   const templates: Record<number, string[]> = {
     1: [
-      'Определить 1–2 ключевых направления на 9 лет',
-      'Запустить первый продукт/курс/проект',
-      'Настроить систему дохода и привычек',
-      'Укрепить новый образ жизни и работы'
+      `Определить стратегию развития для "${mainProject}" и цели "${userGoals.work || 'в работе'}"`,
+      `Запустить первый этап проекта "${mainProject}"`,
+      `Настроить систему дохода и внедрить "${userGoals.money || 'новые финансовые привычки'}"`,
+      `Укрепить новый образ жизни и достичь "${userGoals.health || 'целей по здоровью'}"`
     ],
     2: [
-      'Найти или укрепить ключевого партнёра',
-      'Отладить правила в отношениях и финансах',
-      'Проработать эмоциональные реакции',
-      'Закрепить баланс и сотрудничество'
+      `Найти ключевого партнёра для "${mainProject}" и улучшить "${userGoals.family || 'отношения'}"`,
+      `Отладить правила взаимодействия в команде проекта "${mainProject}"`,
+      `Проработать эмоциональный интеллект для реализации "${userGoals.spirit || 'духовных целей'}"`,
+      `Закрепить баланс между "${mainProject}" и личной жизнью`
     ],
     3: [
-      'Запустить или оживить творческий проект',
-      'Выступить публично или провести вебинар',
-      'Найти комфортный формат самовыражения',
-      'Расширить круг общения и идей'
+      `Масштабировать "${mainProject}" и достичь "${userGoals.work || 'профессионального роста'}"`,
+      `Провести серию мероприятий для продвижения "${mainProject}"`,
+      `Найти уникальный творческий стиль для "${userGoals.spirit || 'самовыражения'}"`,
+      `Расширить круг влияния и реализовать "${userGoals.money || 'финансовый потенциал'}"`
     ],
     4: [
-      'Выстроить устойчивый распорядок дня',
-      'Создать "скелет" проекта или бизнеса',
-      'Сформировать финансовую подушку',
-      'Укрепить фундамент и дисциплину'
+      `Выстроить жесткую структуру для "${mainProject}" и "${userGoals.work || 'рабочих процессов'}"`,
+      `Создать системный "скелет" для реализации "${userGoals.money || 'финансовых целей'}"`,
+      `Оптимизировать быт для поддержки "${userGoals.family || 'семейного благополучия'}"`,
+      `Укрепить дисциплину в "${userGoals.health || 'заботе о теле'}" и проектах`
     ],
     5: [
-      'Освоить новое направление или навык',
-      'Расширить круг общения и возможностей',
-      'Спланировать и совершить поездку',
-      'Экспериментировать с форматами жизни'
+      `Освоить новые рынки для "${mainProject}" и навыки для "${userGoals.work || 'карьеры'}"`,
+      `Расширить географию контактов для реализации "${userGoals.money || 'финансовых планов'}"`,
+      `Спланировать поездку, соответствующую "${userGoals.spirit || 'духовным поискам'}"`,
+      `Экспериментировать с форматами в "${mainProject}" и "${userGoals.health || 'образе жизни'}"`
     ],
     6: [
-      'Укрепить или пересобрать отношения',
-      'Заняться благоустройством дома',
-      'Направить энергию в созидание',
-      'Сбалансировать ценности и желания'
+      `Укрепить команду "${mainProject}" и "${userGoals.family || 'семейные узы'}"`,
+      `Заняться эстетикой пространства для реализации "${userGoals.spirit || 'творческих идей'}"`,
+      `Направить энергию в созидание и достижение "${userGoals.work || 'социальных целей'}"`,
+      `Сбалансировать ценности "${userGoals.spirit || 'духа'}" с целями проекта`
     ],
     7: [
-      'Пройти значимое обучение или курс',
-      'Выстроить личную духовную практику',
-      'Понять свои истинные цели и смыслы',
-      'Углубиться в исследования и анализ'
+      `Провести глубокий аудит "${mainProject}" и "${userGoals.work || 'своих достижений'}"`,
+      `Выстроить практику (Монро, Диспенза) для "${userGoals.spirit || 'внутреннего роста'}"`,
+      `Понять истинные смыслы "${mainProject}" и "${userGoals.family || 'своих отношений'}"`,
+      `Углубиться в аналитику для реализации "${userGoals.money || 'финансовой стратегии'}"`
     ],
     8: [
-      'Реализовать проект с видимым результатом',
-      'Пересобрать финансовую стратегию',
-      'Взять ответственность за крупный вопрос',
-      'Собирать плоды и управлять ресурсами'
+      `Реализовать "${mainProject}" и достичь "${userGoals.money || 'максимального дохода'}"`,
+      `Пересобрать активы для реализации "${userGoals.work || 'амбициозных планов'}"`,
+      `Взять на себя роль лидера в "${mainProject}" и "${userGoals.family || 'семье'}"`,
+      `Управлять ресурсами для достижения "${userGoals.health || 'пиковой формы'}"`
     ],
     9: [
-      'Закрыть старые проекты',
-      'Разобраться с финансами и долгами',
-      'Привести в порядок дом, цифровое пространство, документы',
-      'Подвести итоги 9-летия и спланировать новый цикл'
+      `Завершить текущий цикл "${mainProject}" и "${userGoals.work || 'рабочих задач'}"`,
+      `Провести ревизию для реализации "${userGoals.money || 'финансовой свободы'}"`,
+      `Освободить пространство для "${userGoals.spirit || 'новых смыслов'}" и "${userGoals.family || 'семьи'}"`,
+      `Подвести итоги и подготовить почву для "${userGoals.health || 'нового уровня жизни'}"`
     ]
   };
 
-  return [1, 2, 3, 4].map(q => ({
-    id: `q${q}-${yearTheme.id}`,
-    userId: yearTheme.userId,
-    year: yearTheme.year,
-    quarter: q as 1 | 2 | 3 | 4,
-    title: templates[personalYearNumber]?.[q - 1] || `Цель на ${q} квартал`,
-    description: `Фокус на реализации потенциала года ${yearTheme.year} в сфере ${AREAS[q % AREAS.length]}`,
-    relatedArea: AREAS[q % AREAS.length],
-    parentYearThemeId: yearTheme.id,
-  }));
+  return [1, 2, 3, 4].map(q => {
+    const archetype = ARCHETYPES[personalYearNumber];
+    const generalAdvice = `Квартал ${q} в году ${archetype.name}. Время для ${q === 1 ? 'планирования' : q === 2 ? 'развития' : q === 3 ? 'активности' : 'завершения'}.`;
+    const specificAdvice = `Для вашей профессии (${user.profession || 'специалист'}) этот этап важен для реализации "${mainProject}". Учитывайте приоритеты: ${(user.focusAreas || []).join(', ')}.`;
+
+    return {
+      id: `q${q}-${yearTheme.id}`,
+      userId: yearTheme.userId,
+      year: yearTheme.year,
+      quarter: q as 1 | 2 | 3 | 4,
+      title: templates[personalYearNumber]?.[q - 1] || `Цель на ${q} квартал`,
+      description: `### Общие рекомендации\n${generalAdvice}\n\n### Конкретные шаги\n${specificAdvice}`,
+      relatedArea: AREAS[q % AREAS.length],
+      parentYearThemeId: yearTheme.id,
+    };
+  });
 }
 
 export function generateMonthGoals(quarterObjectives: QuarterObjective[], user: User, personalYearNumber: number): MonthGoal[] {
+  const projects = user.currentProjects && user.currentProjects.length > 0 ? user.currentProjects : [];
+  const mainProject = projects[0] || 'проект';
+  const userGoals = user.yearlyGoals || {};
+  const archetype = ARCHETYPES[personalYearNumber];
+
   const templates: Record<number, Record<Area, string>> = {
     1: {
-      work: 'Запустить beta-версию курса/приложения',
-      money: 'Сформировать базовый финансовый план на 3 года',
-      family: 'Утвердить совместные цели и новый распорядок',
-      spirit: 'Определить главные практики и встроить их в неделю',
-      health: 'Запустить новую физическую рутину'
+      work: `Запустить MVP "${mainProject}" (цель: ${userGoals.work || 'старт'})`,
+      money: `Создать модель дохода (цель: ${userGoals.money || 'стабильность'})`,
+      family: `Обсудить "${mainProject}" с семьей (цель: ${userGoals.family || 'поддержка'})`,
+      spirit: `Медитация по Диспензе для манифестации "${userGoals.spirit || 'успеха'}"`,
+      health: `Внедрить привычку для "${userGoals.health || 'энергии'}"`
     },
     2: {
-      work: 'Найти напарника или запустить совместный проект',
-      money: 'Зафиксировать финансовые договорённости',
-      family: 'Укрепить союз через совместное планирование',
-      spirit: 'Практика эмпатии и активного слушания',
-      health: 'Наладить режим сна и эмоциональный покой'
+      work: `Найти партнеров для "${mainProject}" (цель: ${userGoals.work || 'рост'})`,
+      money: `Закрепить условия по "${userGoals.money || 'финансам'}"`,
+      family: `Укрепить "${userGoals.family || 'отношения'}" через диалог`,
+      spirit: `Практика осознанности для "${userGoals.spirit || 'спокойствия'}"`,
+      health: `Наладить сон для "${userGoals.health || 'восстановления'}"`
     },
     3: {
-      work: 'Подготовить презентацию или новый контент',
-      money: 'Найти способ монетизации творчества',
-      family: 'Организовать яркое семейное событие',
-      spirit: 'Начать вести творческий дневник',
-      health: 'Добавить радости в движение (танцы, игры)'
+      work: `Продвижение "${mainProject}" (цель: ${userGoals.work || 'публичность'})`,
+      money: `Первые продажи в "${mainProject}" (цель: ${userGoals.money || 'прибыль'})`,
+      family: `Творческий вечер (цель: ${userGoals.family || 'радость'})`,
+      spirit: `Дневник для реализации "${userGoals.spirit || 'инсайтов'}"`,
+      health: `Активность для "${userGoals.health || 'тонуса'}"`
     },
     4: {
-      work: 'Описать ключевые процессы и регламенты',
-      money: 'Навести порядок в бюджете и накоплениях',
-      family: 'Обустроить быт и домашнюю рутину',
-      spirit: 'Соблюдать график духовных практик',
-      health: 'Профилактика и чекап здоровья'
+      work: `Систематизация "${mainProject}" (цель: ${userGoals.work || 'порядок'})`,
+      money: `Учет в "${userGoals.money || 'финансах'}"`,
+      family: `Порядок в доме (цель: ${userGoals.family || 'уют'})`,
+      spirit: `Дисциплина в медитациях для "${userGoals.spirit || 'воли'}"`,
+      health: `Чек-ап для "${userGoals.health || 'долголетия'}"`
     },
     5: {
-      work: 'Попробовать новый формат работы или нишу',
-      money: 'Протестировать новый источник дохода',
-      family: 'Запланировать семейное путешествие',
-      spirit: 'Изучить новую философию или культуру',
-      health: 'Следить за уровнем энергии, избегать выгорания'
+      work: `Тест расширения "${mainProject}" (цель: ${userGoals.work || 'новое'})`,
+      money: `Инвестиции для "${userGoals.money || 'капитала'}"`,
+      family: `Поездка (цель: ${userGoals.family || 'впечатления'})`,
+      spirit: `Метод Монро для "${userGoals.spirit || 'расширения сознания'}"`,
+      health: `Контроль стресса для "${userGoals.health || 'баланса'}"`
     },
     6: {
-      work: 'Проект, связанный с людьми или сервисом',
-      money: 'Инвестиции в уют и комфорт близких',
-      family: 'Уделить время качеству отношений в паре',
-      spirit: 'Переоценка личных ценностей',
-      health: 'Баланс между удовольствием и дисциплиной'
+      work: `Сервис в "${mainProject}" (цель: ${userGoals.work || 'качество'})`,
+      money: `Траты на "${userGoals.family || 'качество жизни'}"`,
+      family: `Глубокий разговор (цель: ${userGoals.family || 'близость'})`,
+      spirit: `Благодарность за "${userGoals.spirit || 'жизнь'}"`,
+      health: `Питание для "${userGoals.health || 'легкости'}"`
     },
     7: {
-      work: 'Глубокое исследование или аналитика',
-      money: 'Долгосрочное финансовое планирование',
-      family: 'Честный разговор о смыслах и будущем',
-      spirit: 'Ретрит или глубокое погружение в обучение',
-      health: 'Внимание к ментальному здоровью'
+      work: `Анализ "${mainProject}" (цель: ${userGoals.work || 'стратегия'})`,
+      money: `Пассивный доход (цель: ${userGoals.money || 'свобода'})`,
+      family: `Уединение (цель: ${userGoals.family || 'самопознание'})`,
+      spirit: `Труды Диспензы о "${userGoals.spirit || 'силе мысли'}"`,
+      health: `Детокс для "${userGoals.health || 'чистоты'}"`
     },
     8: {
-      work: 'Масштабирование текущего проекта',
-      money: 'Крупная сделка или финансовый результат',
-      family: 'Решение имущественных или жилищных вопросов',
-      spirit: 'Работа с темой личной силы и границ',
-      health: 'Поддержание ресурса при высоких нагрузках'
+      work: `Масштаб "${mainProject}" (цель: ${userGoals.work || 'лидерство'})`,
+      money: `Крупная сделка (цель: ${userGoals.money || 'богатство'})`,
+      family: `Семейная покупка (цель: ${userGoals.family || 'статус'})`,
+      spirit: `Управление энергией для "${userGoals.spirit || 'влияния'}"`,
+      health: `Тренировки для "${userGoals.health || 'силы'}"`
     },
     9: {
-      work: 'Закрыть один крупный проект / модуль',
-      money: 'Составить список всех долгов и план погашения',
-      family: 'Поговорить с партнёром о планах на 3–5 лет',
-      spirit: 'Закончить один курс/книгу по психологии/духовности',
-      health: 'Провести полное обследование организма'
+      work: `Завершение этапа "${mainProject}" (цель: ${userGoals.work || 'итог'})`,
+      money: `Закрытие долгов (цель: ${userGoals.money || 'чистота'})`,
+      family: `Обновление "${userGoals.family || 'отношений'}"`,
+      spirit: `Рефлексия пути (цель: ${userGoals.spirit || 'мудрость'})`,
+      health: `Отдых для "${userGoals.health || 'перезагрузки'}"`
     }
   };
 
@@ -207,13 +226,16 @@ export function generateMonthGoals(quarterObjectives: QuarterObjective[], user: 
     for (let i = 0; i < 3; i++) {
       const month = startMonth + i;
       const area = AREAS[month % AREAS.length];
+      const generalAdvice = `Месяц ${month} в сфере ${AREA_LABELS[area]}. Энергия архетипа ${archetype.name} помогает в ${area === 'work' ? 'делах' : area === 'money' ? 'финансах' : area === 'family' ? 'отношениях' : area === 'spirit' ? 'духовности' : 'здоровье'}.`;
+      const specificAdvice = `Как ${user.profession || 'специалист'}, используйте этот месяц для продвижения "${mainProject}". Ваши фокусы: ${(user.focusAreas || []).join(', ')}.`;
+
       goals.push({
         id: `m${month}-${q.id}`,
         userId: q.userId,
         year: q.year,
         month,
         title: templates[personalYearNumber]?.[area] || `Цель на месяц ${month}`,
-        description: `Шаг к цели квартала: ${q.title}`,
+        description: `### Общие рекомендации\n${generalAdvice}\n\n### Конкретные шаги\n${specificAdvice}`,
         relatedArea: area,
         parentQuarterObjectiveId: q.id,
         parentYearThemeId: q.parentYearThemeId,
@@ -233,8 +255,8 @@ export function generateWeekFocuses(monthGoals: MonthGoal[], user: User): WeekFo
         year: m.year,
         month: m.month,
         weekNumber: (m.month - 1) * 4 + i,
-        title: `Фокус недели ${i}`,
-        description: `Концентрация на задаче месяца: ${m.title}`,
+        title: `Фокус недели ${i}: Детализация "${m.title}"`,
+        description: `Концентрация на конкретном шаге: ${m.title}. Адаптируйте это под ваши проекты: ${(user.currentProjects || []).join(', ')}.`,
         relatedArea: m.relatedArea,
         parentMonthGoalId: m.id,
         parentQuarterObjectiveId: m.parentQuarterObjectiveId,
@@ -246,69 +268,74 @@ export function generateWeekFocuses(monthGoals: MonthGoal[], user: User): WeekFo
 }
 
 export function generateDailyTasks(weekFocuses: WeekFocus[], user: User, personalYearNumber: number): DailyStep[] {
+  const projects = user.currentProjects && user.currentProjects.length > 0 ? user.currentProjects : [];
+  const mainProject = projects[0] || 'проект';
+  const userGoals = user.yearlyGoals || {};
+  const archetype = ARCHETYPES[personalYearNumber];
+
   const templates: Record<number, Record<Area, string>> = {
     1: {
-      work: 'Сделать один шаг к запуску (написать письмо, блок урока, фичу)',
-      money: 'Проработать одну идею дополнительного дохода или отложить небольшую сумму',
-      family: 'Обсудить с близкими новые правила или планы',
-      spirit: '5–10 минут настройки: чего я хочу от нового цикла?',
-      health: 'Выполнить новую физическую рутину'
+      work: `Шаг по "${mainProject}": ${userGoals.work || 'сделать важное действие'}`,
+      money: `Финансы: ${userGoals.money || 'записать идею дохода'}`,
+      family: `Семья: ${userGoals.family || 'уделить время близким'}`,
+      spirit: userGoals.spirit ? `Практика для "${userGoals.spirit}": 5 мин визуализации по Диспензе` : '5 минут визуализации по Диспензе для реализации целей',
+      health: `Здоровье: ${userGoals.health || 'сделать разминку'}`
     },
     2: {
-      work: 'Обсудить детали совместного дела с партнером',
-      money: 'Сверить расходы с общим планом',
-      family: 'Провести вечер, внимательно слушая близкого',
-      spirit: 'Практика эмпатии в общении',
-      health: 'Медитация на эмоциональное равновесие'
+      work: `Коммуникация по "${mainProject}": ${userGoals.work || 'обсудить задачу'}`,
+      money: `Контроль: ${userGoals.money || 'сверить бюджет'}`,
+      family: `Отношения: ${userGoals.family || '15 минут общения'}`,
+      spirit: userGoals.spirit ? `Практика для "${userGoals.spirit}": "наблюдатель" за мыслями` : 'Практика "наблюдателя" за своими мыслями',
+      health: `Режим: ${userGoals.health || 'лечь вовремя'}`
     },
     3: {
-      work: 'Написать пост или создать черновик идеи',
-      money: 'Сделать шаг в творческом заработке',
-      family: 'Придумать веселое занятие для всех',
-      spirit: '10 минут свободного письма (фрирайтинг)',
-      health: 'Активная прогулка в удовольствие'
+      work: `Креатив по "${mainProject}": ${userGoals.work || 'набросать идеи'}`,
+      money: `Инструменты: ${userGoals.money || 'изучить стоимость'}`,
+      family: `Дом: ${userGoals.family || 'совместный ужин'}`,
+      spirit: userGoals.spirit ? `Фрирайтинг по цели "${userGoals.spirit}"` : 'Фрирайтинг: "Как я реализую свои цели?"',
+      health: `Движение: ${userGoals.health || 'прогулка 30 мин'}`
     },
     4: {
-      work: 'Привести в порядок один рабочий процесс',
-      money: 'Записать все траты за день',
-      family: 'Сделать что-то полезное для дома',
-      spirit: 'Выполнить привычную практику без пропусков',
-      health: 'Соблюсти режим питания и сна'
+      work: `Порядок в "${mainProject}": ${userGoals.work || 'структурировать данные'}`,
+      money: `Учет: ${userGoals.money || 'внести данные в таблицу'}`,
+      family: `Забота: ${userGoals.family || 'помочь близкому'}`,
+      spirit: userGoals.spirit ? `Медитация на "${userGoals.spirit}" для ясности` : 'Медитация на концентрацию для ясности ума',
+      health: `Питание: ${userGoals.health || 'полезный перекус'}`
     },
     5: {
-      work: 'Узнать что-то новое о своей сфере',
-      money: 'Изучить возможность расширения дохода',
-      family: 'Предложить идею для мини-поездки',
-      spirit: 'Почитать книгу о новом взгляде на мир',
-      health: 'Сменить обстановку для подзарядки'
+      work: `Обучение для "${mainProject}": ${userGoals.work || 'изучить материал'}`,
+      money: `Рынок: ${userGoals.money || 'анализ возможностей'}`,
+      family: `Связь: ${userGoals.family || 'позвонить родным'}`,
+      spirit: userGoals.spirit ? `Hemi-Sync (Монро) для цели "${userGoals.spirit}"` : 'Слушать аудио-практику Монро (Hemi-Sync)',
+      health: `Энергия: ${userGoals.health || 'контрастный душ'}`
     },
     6: {
-      work: 'Помочь коллеге или клиенту делом',
-      money: 'Купить что-то красивое для дома',
-      family: 'Сделать приятный сюрприз партнеру',
-      spirit: 'Подумать, что для меня сейчас важнее всего',
-      health: 'Приготовить здоровую и вкусную еду'
+      work: `Благодарность в "${mainProject}": ${userGoals.work || 'написать партнеру'}`,
+      money: `Уют: ${userGoals.money || 'купить полезное'}`,
+      family: `Внимание: ${userGoals.family || 'сделать комплимент'}`,
+      spirit: userGoals.spirit ? `Практика "Сердечный центр" (Диспенза) для "${userGoals.spirit}"` : 'Практика "Сердечный центр" по Диспензе',
+      health: `Гибкость: ${userGoals.health || 'растяжка'}`
     },
     7: {
-      work: 'Погрузиться в изучение сложной темы',
-      money: 'Проанализировать свои финансовые привычки',
-      family: 'Побыть в тишине, осознать свои чувства',
-      spirit: '30 минут чтения глубокой литературы',
-      health: 'Ранний отход ко сну, покой'
+      work: `Анализ "${mainProject}": ${userGoals.work || 'итоги недели'}`,
+      money: `Стратегия: ${userGoals.money || 'план на будущее'}`,
+      family: `Тишина: ${userGoals.family || 'вечер чтения'}`,
+      spirit: userGoals.spirit ? `Чтение Диспензы/Монро через призму "${userGoals.spirit}"` : '30 минут чтения Диспензы или Монро',
+      health: `Релакс: ${userGoals.health || 'медитация на расслабление'}`
     },
     8: {
-      work: 'Принять волевое решение по проекту',
-      money: 'Проверить состояние счетов и активов',
-      family: 'Обсудить важную семейную покупку',
-      spirit: 'Практика уверенности и границ',
-      health: 'Силовая тренировка или активный отдых'
+      work: `Решение по "${mainProject}": ${userGoals.work || 'важный выбор'}`,
+      money: `Баланс: ${userGoals.money || 'проверить счета'}`,
+      family: `Планы: ${userGoals.family || 'обсудить выходные'}`,
+      spirit: userGoals.spirit ? `Утверждение воли для "${userGoals.spirit}"` : 'Практика утверждения своей воли и силы',
+      health: `Тонус: ${userGoals.health || 'силовая тренировка'}`
     },
     9: {
-      work: 'Выбери одно незавершённое дело и сделай шаг, который его продвигает',
-      money: 'Пересмотри одну трату/подписку',
-      family: '5–10 минут спокойно обсудить с близкими планы/чувства',
-      spirit: '10–15 минут дневника: что сегодня хочется завершить?',
-      health: 'Легкая прогулка или растяжка'
+      work: `Финиш по "${mainProject}": ${userGoals.work || 'закрыть задачу'}`,
+      money: `Очистка: ${userGoals.money || 'отключить лишнее'}`,
+      family: `Мир: ${userGoals.family || 'сказать спасибо'}`,
+      spirit: userGoals.spirit ? `Рефлексия по цели "${userGoals.spirit}"` : 'Итоговая запись в дневнике за день',
+      health: `Покой: ${userGoals.health || 'ранний сон'}`
     }
   };
 
@@ -317,12 +344,15 @@ export function generateDailyTasks(weekFocuses: WeekFocus[], user: User, persona
     for (let i = 1; i <= 7; i++) {
       const date = new Date(w.year, 0, (w.weekNumber - 1) * 7 + i);
       const area = w.relatedArea;
+      const generalAdvice = `День под энергией архетипа ${archetype.name}. Сфокусируйтесь на качестве действий.`;
+      const specificAdvice = `Для вашей профессии (${user.profession || 'специалист'}) сегодня важно сделать шаг в проекте "${mainProject}".`;
+
       steps.push({
         id: `d${i}-${w.id}`,
         userId: w.userId,
         date: date.toISOString(),
         title: templates[personalYearNumber]?.[area] || `Задача дня ${i}`,
-        description: `Маленький шаг в сфере ${AREA_LABELS[area]}`,
+        description: `### Общие рекомендации\n${generalAdvice}\n\n### Конкретные шаги\n${specificAdvice}`,
         relatedArea: area,
         status: 'planned',
         parentWeekFocusId: w.id,

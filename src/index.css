@@ -6,6 +6,20 @@
   --font-serif: "Playfair Display", serif;
 }
 
+@layer base {
+  html, body {
+    @apply overflow-x-hidden w-full max-w-full;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+  }
+  #root {
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -19,5 +33,61 @@
   }
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
+  }
+
+  .markdown-body h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .markdown-body p {
+    margin-bottom: 0.75rem;
+  }
+
+  .markdown-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown-body ul, .markdown-body ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.25rem;
+    list-style-type: disc;
+  }
+
+  .markdown-body ol {
+    list-style-type: decimal;
+  }
+
+  .markdown-body li {
+    margin-bottom: 0.25rem;
+  }
+
+  .markdown-body strong {
+    font-weight: 700;
+  }
+
+  /* iOS Safari specific fixes */
+  input, textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on focus in iOS */
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .typing-cursor p:last-child::after {
+    content: '●';
+    display: inline-block;
+    margin-left: 4px;
+    animation: blink 1s infinite;
+    font-size: 0.8em;
+    vertical-align: middle;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
   }
 }

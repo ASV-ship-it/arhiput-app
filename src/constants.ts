@@ -10,7 +10,7 @@ export const AREA_LABELS: Record<Area, string> = {
   health: 'Здоровье/Тело',
 };
 
-export const ARCHETYPES: Record<number, { name: string; description: string; themes: Record<Area, string> }> = {
+export const ARCHETYPES: Record<number, { name: string; description: string; themes: Record<Area, string>; recommendedBooks: string[] }> = {
   1: {
     name: 'Маг',
     description: 'Год нового цикла. Время запускать важные проекты, заявлять о себе, проявлять инициативу. То, что начнёшь в этот год, может задавать тон на ближайшие 9 лет.',
@@ -21,6 +21,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Формирование новой системы ценностей, намеренний. Выбор практик, которые будут с тобой весь цикл: медитация, спорт, обучение.',
       health: 'Старт новой физической рутины: спорт, питание, режим. Лучше заложить простые привычки, которые реально держать 9 лет.',
     },
+    recommendedBooks: ['Джо Диспенза "Сила подсознания"', 'Роберт Монро "Путешествия вне тела"', 'Наполеон Хилл "Думай и богатей"'],
   },
   2: {
     name: 'Жрица',
@@ -32,6 +33,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Развитие эмпатии, интуиции, умение слушать.',
       health: 'Бережный режим, работа с эмоциями.',
     },
+    recommendedBooks: ['Эрих Фромм "Искусство любить"', 'Маршалл Розенберг "Ненасильственное общение"', 'Джо Диспенза "Сверхъестественный разум"'],
   },
   3: {
     name: 'Императрица',
@@ -43,6 +45,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Дневник, креативные практики (рисование, музыка, письмо).',
       health: 'Активность, удовольствие от движения.',
     },
+    recommendedBooks: ['Джулия Кэмерон "Путь художника"', 'Элизабет Гилберт "Большое волшебство"', 'Роберт Монро "Далекие путешествия"'],
   },
   4: {
     name: 'Император',
@@ -54,6 +57,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Постоянство практик, а не поиск новых.',
       health: 'Режим, профилактика, устойчивые привычки.',
     },
+    recommendedBooks: ['Стивен Кови "7 навыков высокоэффективных людей"', 'Джеймс Клир "Атомные привычки"', 'Джо Диспенза "Развивайте свой мозг"'],
   },
   5: {
     name: 'Иерофант',
@@ -65,6 +69,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Поиск через путешествия и новые практики.',
       health: 'Много энергии, важно следить, чтобы не выгорать.',
     },
+    recommendedBooks: ['Виктор Франкл "Сказать жизни Да"', 'Роберт Монро "Окончательное путешествие"', 'Тимоти Феррис "4-часовая рабочая неделя"'],
   },
   6: {
     name: 'Влюбленные',
@@ -76,6 +81,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Переоценка ценностей, важности людей в жизни.',
       health: 'Баланс удовольствия и режима.',
     },
+    recommendedBooks: ['Гэри Чепмен "5 языков любви"', 'Джон Готтман "7 принципов счастливого брака"', 'Джо Диспенза "Сила подсознания"'],
   },
   7: {
     name: 'Колесница',
@@ -87,6 +93,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Книги, курсы, философия, практики, ретриты.',
       health: 'Внимание к психике, нервной системе, режиму.',
     },
+    recommendedBooks: ['Экхарт Толле "Сила момента сейчас"', 'Роберт Монро "Путешествия вне тела"', 'Джо Диспенза "Сверхъестественный разум"'],
   },
   8: {
     name: 'Сила',
@@ -98,6 +105,7 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Тема власти и границ — важно не перегибать.',
       health: 'Держать ресурс, не сгорать ради успеха.',
     },
+    recommendedBooks: ['Роберт Кийосаки "Богатый папа, бедный папа"', 'Джим Коллинз "От хорошего к великому"', 'Джо Диспенза "Развивайте свой мозг"'],
   },
   9: {
     name: 'Отшельник',
@@ -109,5 +117,6 @@ export const ARCHETYPES: Record<number, { name: string; description: string; the
       spirit: 'Время терапии, духовных практик, дневника, анализа. Поиск смысла в прожитом, интеграция опыта. Хорошо замедлиться.',
       health: 'Мягкий режим: сон, обследования, профилактика. Не геройствовать, а слушать тело.',
     },
+    recommendedBooks: ['Мари Кондо "Магическая уборка"', 'Грег МакКеон "Эссенциализм"', 'Роберт Монро "Окончательное путешествие"'],
   },
 };
