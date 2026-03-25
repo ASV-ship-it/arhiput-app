@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,22 @@ async function startServer() {
   // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  app.get("/api/config", (req, res) => {
+    // Ищем любой ключ в окружении
+    let foundKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_1 || process.env.API_KEY || process.env.GOOGLE_API_KEY || "";
+    
+    // Если в окружении пусто, используем ключ, предоставленный пользователем
+    if (!foundKey || foundKey === "MY_GEMINI_API_KEY" || foundKey.length < 10) {
+      foundKey = "AIzaSyCrZFGuOrlX-DKwOXY1GjiNQA1RjeKbbRA";
+    }
+
+    console.log(`[Config API] Providing key to client. Length: ${foundKey.length}`);
+    
+    res.json({
+      GEMINI_API_KEY: foundKey
+    });
   });
 
   app.post("/api/user", (req, res) => {
