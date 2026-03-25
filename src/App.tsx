@@ -1846,3 +1846,33 @@ function ChatScreen({ messages, onSend, input, setInput, loading, theme }: { mes
     </div>
   );
 }
+<form
+  name="archiput-feedback"
+  method="POST"
+  data-netlify="true"
+  netlify
+  style={{ marginTop: "2rem", padding: "1rem", border: "1px solid #ccc", borderRadius: "8px" }}
+>
+  <h3>Обратная связь</h3>
+
+  <input type="hidden" name="form-name" value="archiput-feedback" />
+
+  <label style={{ display: "block", marginTop: "0.5rem" }}>
+    Что тебе понравилось?
+    <textarea name="liked" required style={{ width: "100%", minHeight: "60px" }} />
+  </label>
+
+  <label style={{ display: "block", marginTop: "0.5rem" }}>
+    Что можно улучшить?
+    <textarea name="disliked" required style={{ width: "100%", minHeight: "60px" }} />
+  </label>
+
+  <label style={{ display: "block", marginTop: "0.5rem" }}>
+    Оставь почту, если хочешь ответ
+    <input type="email" name="email" style={{ width: "100%" }} />
+  </label>
+
+  <button type="submit" style={{ marginTop: "0.75rem" }}>
+    Отправить отзыв
+  </button>
+</form>
